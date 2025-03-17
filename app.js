@@ -1,7 +1,21 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
+    // OAuth Configuration
+    const GITHUB_CLIENT_ID = ''; // Add your client ID here
+    const GITHUB_REDIRECT_URI = window.location.origin + window.location.pathname;
+    const GITHUB_AUTH_URL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=repo,delete_repo`;
+    
+    // DOM Elements - Tabs
+    const oauthTabBtn = document.getElementById('oauth-tab-btn');
+    const tokenTabBtn = document.getElementById('token-tab-btn');
+    const oauthLoginDiv = document.getElementById('oauth-login');
+    const tokenLoginDiv = document.getElementById('token-login');
+    
+    // DOM Elements - Authentication
     const tokenInput = document.getElementById('token-input');
-    const loginBtn = document.getElementById('login-btn');
+    const tokenLoginBtn = document.getElementById('token-login-btn');
+    const oauthLoginBtn = document.getElementById('oauth-login-btn');
+    
+    // DOM Elements - Repositories
     const refreshBtn = document.getElementById('refresh-btn');
     const selectAllBtn = document.getElementById('select-all-btn');
     const deselectAllBtn = document.getElementById('deselect-all-btn');
@@ -9,6 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const repoList = document.getElementById('repo-list');
     const downloadBtn = document.getElementById('download-btn');
     const deleteBtn = document.getElementById('delete-btn');
+    
+    // DOM Elements - Modals
     const statusMessage = document.getElementById('status-message');
     const confirmationModal = document.getElementById('confirmation-modal');
     const reposToDeleteList = document.getElementById('repos-to-delete');
@@ -22,37 +38,114 @@ document.addEventListener('DOMContentLoaded', function() {
     let downloadQueue = [];
     let deleteQueue = [];
 
-    // Event Listeners
-    loginBtn.addEventListener('click', handleLogin);
+    // Tab Switching
+    oauthTabBtn.addEventListener('click', function() {
+        oauthTabBtn.classList.add('active');
+        tokenTabBtn.classList.remove('active');
+        oauthLoginDiv.classList.add('active');
+        tokenLoginDiv.classList.remove('active');
+    });
+    
+    tokenTabBtn.addEventListener('click', function() {
+        tokenTabBtn.classList.add('active');
+        oauthTabBtn.classList.remove('active');
+        tokenLoginDiv.classList.add('active');
+        oauthLoginDiv.classList.remove('active');
+    });
+
+    // Event Listeners - Authentication
+    tokenLoginBtn.addEventListener('click', handleTokenLogin);
+    oauthLoginBtn.addEventListener('click', handleOAuthLogin);
+    
+    // Event Listeners - Repositories
     refreshBtn.addEventListener('click', fetchRepositories);
     selectAllBtn.addEventListener('click', selectAllRepos);
     deselectAllBtn.addEventListener('click', deselectAllRepos);
     filterInput.addEventListener('input', filterRepositories);
     downloadBtn.addEventListener('click', downloadSelectedRepos);
     deleteBtn.addEventListener('click', showDeleteConfirmation);
+    
+    // Event Listeners - Modals
     cancelDeleteBtn.addEventListener('click', hideDeleteConfirmation);
     confirmDeleteBtn.addEventListener('click', deleteSelectedRepos);
 
-    // Check for token in local storage
-    const savedToken = localStorage.getItem('gh-cleanup-token');
-    if (savedToken) {
-        tokenInput.value = savedToken;
-        handleLogin();
+    // Check for token in local storage or OAuth code in URL
+    initializeAuthentication();
+    
+    // Functions - Initialization
+    function initializeAuthentication() {
+        // Check for OAuth code in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        
+        if (code) {
+            // Clean the URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            handleOAuthCallback(code);
+        } else {
+            // Check for token in local storage
+            const savedToken = localStorage.getItem('gh-cleanup-token');
+            if (savedToken) {
+                token = savedToken;
+                validateToken(token);
+            }
+        }
     }
 
-    // Functions
-    async function handleLogin() {
+    // Functions - Authentication
+    function handleOAuthLogin() {
+        window.location.href = GITHUB_AUTH_URL;
+    }
+    
+    async function handleOAuthCallback(code) {
+        showStatus('Exchanging code for token...', 'success');
+        
+        try {
+            // Exchange the code for a token using our server endpoint
+            const response = await fetch('/api/exchange-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to exchange code for token');
+            }
+            
+            const data = await response.json();
+            
+            if (data.access_token) {
+                token = data.access_token;
+                localStorage.setItem('gh-cleanup-token', token);
+                validateToken(token);
+            } else if (data.error) {
+                throw new Error(data.error_description || data.error);
+            } else {
+                throw new Error('No token received from GitHub');
+            }
+        } catch (error) {
+            showStatus(`OAuth authentication failed: ${error.message}. Try token authentication instead.`, 'error');
+        }
+    }
+    
+    async function handleTokenLogin() {
         token = tokenInput.value.trim();
         if (!token) {
             showStatus('Please enter a valid GitHub token', 'error');
             return;
         }
-
+        
+        validateToken(token);
+    }
+    
+    async function validateToken(tokenToValidate) {
         try {
             // Test token by fetching user info
             const response = await fetch('https://api.github.com/user', {
                 headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `token ${tokenToValidate}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
@@ -65,7 +158,8 @@ document.addEventListener('DOMContentLoaded', function() {
             showStatus(`Successfully logged in as ${userData.login}`, 'success');
             
             // Save token to local storage
-            localStorage.setItem('gh-cleanup-token', token);
+            localStorage.setItem('gh-cleanup-token', tokenToValidate);
+            token = tokenToValidate;
             
             // Enable controls
             enableControls();
@@ -85,6 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
         filterInput.disabled = false;
     }
 
+    // Functions - Repository Management
     async function fetchRepositories() {
         showStatus('Fetching repositories...', 'success');
         repositories = [];
@@ -217,6 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
         deleteBtn.disabled = !hasSelected;
     }
 
+    // Functions - Repository Actions
     async function downloadSelectedRepos() {
         if (selectedRepos.size === 0) {
             showStatus('No repositories selected', 'error');
@@ -348,6 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Helper Functions
     function showStatus(message, type) {
         statusMessage.textContent = message;
         statusMessage.className = 'status-message';
