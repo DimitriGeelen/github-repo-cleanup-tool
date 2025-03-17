@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repository Cleanup Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GitHub Repository Cleanup Tool</h1>
+            <p>Select repositories to download and delete</p>
+        </header>
+
+        <section class="auth-section">
+            <h2>GitHub Authentication</h2>
+            <p>To access your repositories, please provide a GitHub personal access token with appropriate permissions:</p>
+            <div class="input-group">
+                <input type="password" id="token-input" placeholder="GitHub Personal Access Token">
+                <button id="login-btn">Login</button>
+            </div>
+            <p class="token-note">Note: Your token needs <code>repo</code> and <code>delete_repo</code> scopes.</p>
+        </section>
+
+        <section class="repo-section">
+            <h2>Your Repositories</h2>
+            <div class="controls">
+                <button id="refresh-btn" disabled>Refresh List</button>
+                <button id="select-all-btn" disabled>Select All</button>
+                <button id="deselect-all-btn" disabled>Deselect All</button>
+                <input type="text" id="filter-repos" placeholder="Filter repositories..." disabled>
+            </div>
+
+            <div class="repo-list-container">
+                <div id="repo-list" class="repo-list">
+                    <p class="empty-state">Please login to see your repositories</p>
+                </div>
+            </div>
+
+            <div class="action-btns">
+                <button id="download-btn" disabled>Download Selected</button>
+                <button id="delete-btn" disabled>Delete Selected</button>
+            </div>
+        </section>
+
+        <div id="status-message" class="status-message"></div>
+
+        <div id="confirmation-modal" class="modal">
+            <div class="modal-content">
+                <h3>Confirm Deletion</h3>
+                <p>Are you sure you want to delete the selected repositories? This action cannot be undone.</p>
+                <p>The following repositories will be deleted:</p>
+                <ul id="repos-to-delete"></ul>
+                <div class="modal-buttons">
+                    <button id="cancel-delete">Cancel</button>
+                    <button id="confirm-delete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
