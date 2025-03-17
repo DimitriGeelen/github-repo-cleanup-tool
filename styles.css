@@ -79,10 +79,71 @@ button:disabled {
     margin-left: 0.5rem;
 }
 
-.token-note {
+.token-note, .auth-note {
     font-size: 0.8rem;
     color: #586069;
     margin-top: 0.5rem;
+}
+
+/* Authentication tabs */
+.auth-tabs {
+    display: flex;
+    border-bottom: 1px solid #e1e4e8;
+    margin-bottom: 1rem;
+}
+
+.tab-btn {
+    background-color: transparent;
+    color: #586069;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-right: 1rem;
+    cursor: pointer;
+}
+
+.tab-btn.active {
+    color: #0366d6;
+    border-bottom: 2px solid #0366d6;
+    font-weight: 500;
+}
+
+.auth-method {
+    display: none;
+    padding: 1rem 0;
+}
+
+.auth-method.active {
+    display: block;
+}
+
+.primary-btn {
+    background-color: #24292e;
+    display: inline-block;
+    margin: 1rem 0;
+    padding: 0.7rem 1.5rem;
+}
+
+.primary-btn:hover {
+    background-color: #000;
+}
+
+/* OAuth login button */
+#oauth-login-btn {
+    display: flex;
+    align-items: center;
+    background-color: #24292e;
+}
+
+#oauth-login-btn:before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    background-image: url('data:image/svg+xml;charset=utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="white"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>');
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .controls {
