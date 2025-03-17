@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedRepos = new Set();
     let downloadQueue = [];
     let deleteQueue = [];
+    let currentUser = null;
 
     // Tab Switching
     oauthTabBtn.addEventListener('click', function() {
@@ -142,6 +143,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function validateToken(tokenToValidate) {
         try {
+            // Show loading status
+            showStatus('Validating GitHub token...', 'success');
+            
             // Test token by fetching user info
             const response = await fetch('https://api.github.com/user', {
                 headers: {
@@ -155,7 +159,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const userData = await response.json();
-            showStatus(`Successfully logged in as ${userData.login}`, 'success');
+            currentUser = userData;
+            
+            // Check if the token has the required scopes
+            const scopes = response.headers.get('X-OAuth-Scopes') || '';
+            const hasRepoScope = scopes.includes('repo');
+            const hasDeleteScope = scopes.includes('delete_repo');
+            
+            if (!hasRepoScope || !hasDeleteScope) {
+                let missingScopes = [];
+                if (!hasRepoScope) missingScopes.push('repo');
+                if (!hasDeleteScope) missingScopes.push('delete_repo');
+                
+                const warning = `Warning: Your token is missing required scopes: ${missingScopes.join(', ')}. Some operations may fail.`;
+                showStatus(warning, 'error');
+                console.warn(warning);
+            }
+            
+            // Create success login message with user info
+            const loginMessage = createLoginSuccessMessage(userData);
+            showStatus(loginMessage, 'success');
             
             // Save token to local storage
             localStorage.setItem('gh-cleanup-token', tokenToValidate);
@@ -164,12 +187,56 @@ document.addEventListener('DOMContentLoaded', function() {
             // Enable controls
             enableControls();
             
+            // Update UI with user info
+            updateUserInfo(userData);
+            
             // Fetch repositories
             fetchRepositories();
         } catch (error) {
             showStatus(`Login failed: ${error.message}`, 'error');
             localStorage.removeItem('gh-cleanup-token');
         }
+    }
+    
+    function createLoginSuccessMessage(userData) {
+        const username = userData.login;
+        const name = userData.name || username;
+        const repoCount = userData.public_repos + (userData.owned_private_repos || 0);
+        
+        return `Successfully logged in as ${name} (@${username}). You have access to ${repoCount} repositories.`;
+    }
+    
+    function updateUserInfo(userData) {
+        // Check if user info section already exists, if not create it
+        let userInfoSection = document.getElementById('user-info-section');
+        
+        if (!userInfoSection) {
+            // Create user info section
+            userInfoSection = document.createElement('section');
+            userInfoSection.id = 'user-info-section';
+            userInfoSection.className = 'user-info-section';
+            
+            // Insert after auth section
+            const authSection = document.querySelector('.auth-section');
+            authSection.parentNode.insertBefore(userInfoSection, authSection.nextSibling);
+        }
+        
+        // Populate user info section
+        const avatarUrl = userData.avatar_url;
+        const username = userData.login;
+        const name = userData.name || username;
+        const repoCount = userData.public_repos + (userData.owned_private_repos || 0);
+        
+        userInfoSection.innerHTML = `
+            <div class="user-profile">
+                <img src="${avatarUrl}" alt="${username}" class="user-avatar">
+                <div class="user-details">
+                    <h3>${name}</h3>
+                    <p>@${username}</p>
+                    <p>${repoCount} repositories</p>
+                </div>
+            </div>
+        `;
     }
 
     function enableControls() {
