@@ -11,6 +11,11 @@ body {
     background-color: #f6f8fa;
 }
 
+/* Modal backdrop handling */
+body.modal-open {
+    overflow: hidden;
+}
+
 .container {
     max-width: 900px;
     margin: 0 auto;
@@ -252,6 +257,7 @@ button:disabled {
     display: block;
 }
 
+/* Modal Styling - Improved */
 .modal {
     display: none;
     position: fixed;
@@ -259,10 +265,11 @@ button:disabled {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.6);
     z-index: 1000;
     justify-content: center;
     align-items: center;
+    overflow: auto;
 }
 
 .modal-content {
@@ -271,6 +278,8 @@ button:disabled {
     border-radius: 6px;
     max-width: 600px;
     width: 90%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin: 2rem;
 }
 
 .modal-content h3 {
@@ -287,16 +296,28 @@ button:disabled {
     padding-left: 1.5rem;
     max-height: 200px;
     overflow-y: auto;
+    border: 1px solid #eaecef;
+    border-radius: 3px;
+    padding: 1rem;
+    background-color: #f6f8fa;
 }
 
 #repos-to-delete li {
     margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid #eaecef;
+}
+
+#repos-to-delete li:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
 }
 
 .modal-buttons {
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
+    margin-top: 1.5rem;
 }
 
 #cancel-delete {
@@ -307,4 +328,9 @@ button:disabled {
 
 #confirm-delete {
     background-color: #d73a49;
+    font-weight: bold;
+}
+
+#confirm-delete:hover {
+    background-color: #cb2431;
 }
