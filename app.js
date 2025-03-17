@@ -381,74 +381,128 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showDeleteConfirmation() {
-        if (selectedRepos.size === 0) {
-            showStatus('No repositories selected', 'error');
-            return;
+        try {
+            // Debug logging
+            console.log("showDeleteConfirmation called");
+            console.log("Selected repos:", selectedRepos);
+            
+            if (selectedRepos.size === 0) {
+                showStatus('No repositories selected', 'error');
+                return;
+            }
+
+            reposToDeleteList.innerHTML = '';
+            deleteQueue = Array.from(selectedRepos);
+            
+            console.log("Delete queue:", deleteQueue);
+            
+            deleteQueue.forEach(repoName => {
+                const listItem = document.createElement('li');
+                listItem.textContent = repoName;
+                reposToDeleteList.appendChild(listItem);
+            });
+
+            // Make sure the modal is properly displayed
+            confirmationModal.style.display = 'flex';
+            console.log("Modal should be displayed now");
+            
+            // Debug and show any styling issues
+            console.log("Modal current style:", confirmationModal.style.display);
+            
+            // Make sure modal is properly styled and visible
+            document.body.classList.add('modal-open');
+            
+            showStatus("Please confirm deletion in the dialog", "success");
+        } catch (error) {
+            console.error("Error in showDeleteConfirmation:", error);
+            showStatus(`Error showing delete confirmation: ${error.message}`, 'error');
         }
-
-        reposToDeleteList.innerHTML = '';
-        deleteQueue = Array.from(selectedRepos);
-        
-        deleteQueue.forEach(repoName => {
-            const listItem = document.createElement('li');
-            listItem.textContent = repoName;
-            reposToDeleteList.appendChild(listItem);
-        });
-
-        confirmationModal.style.display = 'flex';
     }
 
     function hideDeleteConfirmation() {
-        confirmationModal.style.display = 'none';
+        try {
+            console.log("hideDeleteConfirmation called");
+            confirmationModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        } catch (error) {
+            console.error("Error in hideDeleteConfirmation:", error);
+        }
     }
 
     async function deleteSelectedRepos() {
-        hideDeleteConfirmation();
-        if (deleteQueue.length === 0) {
-            showStatus('No repositories selected for deletion', 'error');
-            return;
-        }
-
-        let successCount = 0;
-        let failCount = 0;
-
-        for (const repoFullName of deleteQueue) {
-            try {
-                showStatus(`Deleting ${repoFullName}...`, 'success');
-                const response = await fetch(`https://api.github.com/repos/${repoFullName}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
-
-                if (response.status === 204) {
-                    successCount++;
-                } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Unknown error');
-                }
-            } catch (error) {
-                failCount++;
-                showStatus(`Error deleting ${repoFullName}: ${error.message}`, 'error');
+        try {
+            console.log("deleteSelectedRepos called");
+            hideDeleteConfirmation();
+            
+            if (deleteQueue.length === 0) {
+                showStatus('No repositories selected for deletion', 'error');
+                return;
             }
-        }
 
-        showStatus(`Deletion completed: ${successCount} succeeded, ${failCount} failed`, successCount > 0 ? 'success' : 'error');
-        
-        // Refresh repository list
-        if (successCount > 0) {
-            selectedRepos.clear();
-            fetchRepositories();
+            showStatus(`Starting deletion of ${deleteQueue.length} repositories...`, 'success');
+            
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const repoFullName of deleteQueue) {
+                try {
+                    showStatus(`Deleting ${repoFullName}...`, 'success');
+                    console.log(`Attempting to delete: ${repoFullName}`);
+                    
+                    // Log the exact request being made
+                    console.log(`DELETE request to: https://api.github.com/repos/${repoFullName}`);
+                    console.log(`With token: ${token.substring(0, 4)}...${token.substring(token.length - 4)}`);
+                    
+                    const response = await fetch(`https://api.github.com/repos/${repoFullName}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+
+                    console.log(`Delete response status: ${response.status}`);
+                    
+                    if (response.status === 204) {
+                        successCount++;
+                        showStatus(`Successfully deleted ${repoFullName}`, 'success');
+                    } else {
+                        let errorMessage = `Failed with status ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.message || errorMessage;
+                        } catch (e) {
+                            // If we can't parse JSON response, just use the status code message
+                        }
+                        throw new Error(errorMessage);
+                    }
+                } catch (error) {
+                    failCount++;
+                    console.error(`Error deleting ${repoFullName}:`, error);
+                    showStatus(`Error deleting ${repoFullName}: ${error.message}`, 'error');
+                }
+            }
+
+            showStatus(`Deletion completed: ${successCount} succeeded, ${failCount} failed`, successCount > 0 ? 'success' : 'error');
+            
+            // Refresh repository list
+            if (successCount > 0) {
+                selectedRepos.clear();
+                setTimeout(() => fetchRepositories(), 1000); // Small delay to allow GitHub API to update
+            }
+        } catch (error) {
+            console.error("Error in deleteSelectedRepos:", error);
+            showStatus(`Error in delete process: ${error.message}`, 'error');
         }
     }
 
     // Helper Functions
     function showStatus(message, type) {
+        console.log(`Status: ${type} - ${message}`);
         statusMessage.textContent = message;
         statusMessage.className = 'status-message';
         statusMessage.classList.add(type);
+        statusMessage.style.display = 'block';
         
         // Auto-hide success messages after 5 seconds
         if (type === 'success') {
