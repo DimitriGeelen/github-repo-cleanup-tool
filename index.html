@@ -15,12 +15,26 @@
 
         <section class="auth-section">
             <h2>GitHub Authentication</h2>
-            <p>To access your repositories, please provide a GitHub personal access token with appropriate permissions:</p>
-            <div class="input-group">
-                <input type="password" id="token-input" placeholder="GitHub Personal Access Token">
-                <button id="login-btn">Login</button>
+            <div class="auth-tabs">
+                <button id="oauth-tab-btn" class="tab-btn active">OAuth Login</button>
+                <button id="token-tab-btn" class="tab-btn">Token Login</button>
             </div>
-            <p class="token-note">Note: Your token needs <code>repo</code> and <code>delete_repo</code> scopes.</p>
+            
+            <div id="oauth-login" class="auth-method active">
+                <p>Authenticate with your GitHub account using OAuth:</p>
+                <button id="oauth-login-btn" class="primary-btn">Login with GitHub</button>
+                <p class="auth-note">This will open a new window to authenticate with GitHub.</p>
+            </div>
+            
+            <div id="token-login" class="auth-method">
+                <p>To access your repositories, please provide a GitHub personal access token with appropriate permissions:</p>
+                <div class="input-group">
+                    <input type="password" id="token-input" placeholder="GitHub Personal Access Token">
+                    <button id="token-login-btn">Login</button>
+                </div>
+                <p class="token-note">Note: Your token needs <code>repo</code> and <code>delete_repo</code> scopes.</p>
+                <p><a href="https://github.com/settings/tokens" target="_blank">Create a token here</a></p>
+            </div>
         </section>
 
         <section class="repo-section">
