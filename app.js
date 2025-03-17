@@ -185,13 +185,16 @@ document.addEventListener('DOMContentLoaded', function() {
         repositories = [];
         selectedRepos.clear();
         updateButtons();
+        
+        // Clear the current repository list and show loading indicator
+        repoList.innerHTML = '<p class="empty-state">Loading repositories...</p>';
 
         try {
             let page = 1;
             let hasMore = true;
             
             while (hasMore) {
-                const response = await fetch(`https://api.github.com/user/repos?per_page=100&page=${page}`, {
+                const response = await fetch(`https://api.github.com/user/repos?per_page=100&page=${page}&sort=updated`, {
                     headers: {
                         'Authorization': `token ${token}`,
                         'Accept': 'application/vnd.github.v3+json'
@@ -215,6 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showStatus(`Found ${repositories.length} repositories`, 'success');
         } catch (error) {
             showStatus(`Error: ${error.message}`, 'error');
+            repoList.innerHTML = '<p class="empty-state">Error loading repositories. Try refreshing.</p>';
         }
     }
 
@@ -443,6 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let successCount = 0;
             let failCount = 0;
+            let deletedRepos = []; // Track which repos were actually deleted
 
             for (const repoFullName of deleteQueue) {
                 try {
@@ -465,6 +470,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (response.status === 204) {
                         successCount++;
+                        deletedRepos.push(repoFullName);
                         showStatus(`Successfully deleted ${repoFullName}`, 'success');
                     } else {
                         let errorMessage = `Failed with status ${response.status}`;
@@ -481,14 +487,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error(`Error deleting ${repoFullName}:`, error);
                     showStatus(`Error deleting ${repoFullName}: ${error.message}`, 'error');
                 }
+                
+                // Small delay between deletion requests to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
 
-            showStatus(`Deletion completed: ${successCount} succeeded, ${failCount} failed`, successCount > 0 ? 'success' : 'error');
+            // Final status report
+            const statusMessage = `Deletion completed: ${successCount} succeeded, ${failCount} failed`;
+            showStatus(statusMessage, successCount > 0 ? 'success' : 'error');
+            console.log(statusMessage);
+            console.log("Deleted repos:", deletedRepos);
             
-            // Refresh repository list
+            // Ensure repositories array is updated by removing deleted repos
             if (successCount > 0) {
-                selectedRepos.clear();
-                setTimeout(() => fetchRepositories(), 1000); // Small delay to allow GitHub API to update
+                const deletedRepoSet = new Set(deletedRepos);
+                repositories = repositories.filter(repo => !deletedRepoSet.has(repo.full_name));
+                selectedRepos.clear(); // Clear selections
+                
+                // Force refresh the repository list completely
+                console.log("Refreshing repository list after deletion");
+                await fetchRepositories();
             }
         } catch (error) {
             console.error("Error in deleteSelectedRepos:", error);
